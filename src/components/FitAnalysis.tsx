@@ -93,7 +93,7 @@ export function FitAnalysis({ profile, opportunity, request, profileAction }: {
 }
 
 function ResultSection({ title, items, empty, completedEmpty, icon: Icon }: {
-  title: string; items?: string[]; empty: string; completedEmpty: string; icon: typeof CheckCircle2;
+  title: string; items: string[] | undefined; empty: string; completedEmpty: string; icon: typeof CheckCircle2;
 }) {
   return (
     <section>
