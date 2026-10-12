@@ -10,6 +10,8 @@ export const Route = createFileRoute("/opportunities/")({
       { name: "description", content: "Browse sample opportunities and analyze your fit." },
       { property: "og:title", content: "Opportunities — SkillBridge Lite" },
       { property: "og:description", content: "Browse sample opportunities and analyze your fit." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: OpportunitiesPage,
