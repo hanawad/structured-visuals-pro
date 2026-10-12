@@ -1,24 +1,33 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({
+    meta: [
+      { title: "SkillBridge Lite — Understand Your Fit" },
+      { name: "description", content: "See how your skills, projects, and experience relate to a professional opportunity." },
+      { property: "og:title", content: "SkillBridge Lite — Understand Your Fit" },
+      { property: "og:description", content: "Understand your fit. Discover what to improve. Take your next step." },
+    ],
+  }),
+  component: Home,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
+function Home() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <section className="mx-auto max-w-3xl px-5 py-20 text-center sm:py-28">
+      <p className="text-sm font-semibold uppercase tracking-widest text-primary">SkillBridge Lite</p>
+      <h1 className="mt-4 text-4xl font-bold leading-tight text-foreground sm:text-5xl">
+        Understand Your Fit. Discover Your Next Step.
+      </h1>
+      <p className="mx-auto mt-5 max-w-xl text-lg text-muted-foreground">
+        Compare your documented skills, projects, and experience with a selected opportunity — and
+        see what to improve before you take your next step.
+      </p>
+      <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
+        <Button asChild size="lg"><Link to="/opportunities">Explore Opportunities</Link></Button>
+        <Button asChild size="lg" variant="outline"><Link to="/profile">Complete My Profile</Link></Button>
+      </div>
+    </section>
   );
 }
