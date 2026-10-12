@@ -1,5 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { FitAnalysis } from "@/components/FitAnalysis";
+import { analyzeFit } from "@/lib/fit-analysis.functions";
 import { getOpportunity } from "@/lib/data";
 import { useProfile } from "@/lib/profile-context";
 
@@ -35,6 +36,7 @@ function Analysis() {
         key={`${opportunity.id}-${JSON.stringify(profile)}`}
         profile={profile}
         opportunity={opportunity}
+        request={(p, o) => analyzeFit({ data: { profile: p, opportunity: o } })}
         profileAction={<Link to="/profile" className="text-sm font-medium text-primary underline">Update profile</Link>}
       />
     </section>

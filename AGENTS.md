@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Keep fit-analysis presentation in a dedicated component with an optional real-request adapter; an unconfigured adapter cannot produce real results.
+- AI fit analysis runs in a server function that validates model output against a strict schema and returns typed failure outcomes; keeps the AI key server-side and never shows unverified output.
