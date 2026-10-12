@@ -3,10 +3,13 @@ import { AlertCircle, ArrowRight, CheckCircle2, CircleDashed, LoaderCircle, Spar
 import { Button } from "@/components/ui/button";
 import { demoMatch, hasEnoughData, type Opportunity, type Profile } from "@/lib/data";
 
-export type FitResult = { relevant: string[]; gaps: string[]; nextSteps: string[] };
-export type AnalysisRequest = (profile: Profile, opportunity: Opportunity) => Promise<FitResult>;
+import type { FitOutcome, FitResult } from "@/lib/fit-schema";
+export type { FitResult };
+export type AnalysisRequest = (profile: Profile, opportunity: Opportunity) => Promise<FitOutcome>;
+type Item = { title: string; details: string[] };
 type State =
-  | { status: "idle" | "analyzing" | "insufficient" | "unavailable" }
+  | { status: "idle" | "analyzing" }
+  | { status: "insufficient" | "unavailable"; message?: string }
   | { status: "success"; result: FitResult }
   | { status: "error"; message: string };
 
@@ -30,22 +33,30 @@ export function FitAnalysis({ profile, opportunity, request, profileAction }: {
   const [state, setState] = useState<State>({ status: !enough ? "insufficient" : request ? "idle" : "unavailable" });
   const [showDemo, setShowDemo] = useState(false);
   const status = !enough ? "insufficient" : !request ? "unavailable" : state.status;
+  const detail = "message" in state && state.message && status === state.status ? state.message : null;
   const message = messages[status];
   const Icon = message.icon;
   const demo = demoMatch(profile, opportunity);
   const result = status === "success" && state.status === "success" ? state.result : null;
-  const displayed = result ?? (showDemo && status === "unavailable" ? {
-    ...demo,
-    nextSteps: demo.gaps.length ? demo.gaps.map((skill) => `Build a small project using ${skill}`) : ["Highlight matching projects in your profile"],
-  } : null);
+  const displayed = result ? {
+    relevant: result.relevantSkills.map((r): Item => ({ title: r.item, details: [`Evidence: ${r.evidence}`, `Relevance: ${r.relevance}`] })),
+    gaps: result.potentialGaps.map((g): Item => ({ title: g.requirement, details: [g.reason] })),
+    nextSteps: result.recommendedNextSteps.map((n): Item => ({ title: n.action, details: [n.reason] })),
+  } : showDemo && !request ? {
+    relevant: demo.relevant.map((t): Item => ({ title: t, details: [] })),
+    gaps: demo.gaps.map((t): Item => ({ title: t, details: [] })),
+    nextSteps: (demo.gaps.length ? demo.gaps.map((skill) => `Build a small project using ${skill}`) : ["Highlight matching projects in your profile"]).map((t): Item => ({ title: t, details: [] })),
+  } : null;
 
   async function analyze() {
     if (!enough || !request || state.status === "analyzing") return;
     setShowDemo(false);
     setState({ status: "analyzing" });
     try {
-      const result = await request(profile, opportunity);
-      setState({ status: "success", result });
+      const outcome = await request(profile, opportunity);
+      if (outcome.ok) setState({ status: "success", result: outcome.result });
+      else if (outcome.kind === "insufficient" || outcome.kind === "unavailable") setState({ status: outcome.kind, message: outcome.message });
+      else setState({ status: "error", message: outcome.message });
     } catch {
       setState({ status: "error", message: messages.error.detail });
     }
@@ -60,24 +71,24 @@ export function FitAnalysis({ profile, opportunity, request, profileAction }: {
         <Icon aria-hidden="true" className={`mt-0.5 size-5 shrink-0 text-primary ${status === "analyzing" ? "animate-spin motion-reduce:animate-none" : ""}`} />
         <div>
           <h2 className="font-semibold">{message.title}</h2>
-          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{state.status === "error" && status === "error" ? state.message : message.detail}</p>
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{detail ?? message.detail}</p>
           {status === "insufficient" && <div className="mt-3">{profileAction}</div>}
         </div>
       </div>
 
-      {request && enough && (
+      {request && enough && status !== "insufficient" && (
         <Button className="mt-5" disabled={status === "analyzing"} onClick={analyze}>
           {status === "analyzing" ? <LoaderCircle aria-hidden="true" className="animate-spin motion-reduce:animate-none" /> : <Sparkles aria-hidden="true" />}
           {status === "analyzing" ? "Analyzing…" : status === "success" ? "Analyze again" : "Analyze My Fit"}
         </Button>
       )}
-      {status === "unavailable" && (
+      {!request && enough && (
         <Button variant="outline" className="mt-5" onClick={() => setShowDemo((value) => !value)}>
           {showDemo ? "Hide demonstration example" : "Show demonstration example"}
         </Button>
       )}
 
-      {showDemo && status === "unavailable" && (
+      {showDemo && !request && (
         <div className="mt-6 border-l-2 border-warning pl-4">
           <p className="text-sm font-semibold">Demonstration example — not an AI analysis</p>
           <p className="mt-1 text-sm text-muted-foreground">Simple keyword matching only. These are not AI-generated results.</p>
@@ -93,7 +104,7 @@ export function FitAnalysis({ profile, opportunity, request, profileAction }: {
 }
 
 function ResultSection({ title, items, empty, completedEmpty, icon: Icon }: {
-  title: string; items: string[] | undefined; empty: string; completedEmpty: string; icon: typeof CheckCircle2;
+  title: string; items: Item[] | undefined; empty: string; completedEmpty: string; icon: typeof CheckCircle2;
 }) {
   return (
     <section>
@@ -101,7 +112,12 @@ function ResultSection({ title, items, empty, completedEmpty, icon: Icon }: {
       <h2 className="text-base font-semibold leading-snug">{title}</h2>
       {items?.length ? (
         <ul className="mt-3 list-disc space-y-2 pl-4 text-sm leading-relaxed text-muted-foreground">
-          {items.map((item, index) => <li key={`${index}-${item}`}>{item}</li>)}
+          {items.map((item, index) => (
+            <li key={`${index}-${item.title}`}>
+              <span className="font-medium text-foreground">{item.title}</span>
+              {item.details.map((d) => <span key={d} className="mt-1 block">{d}</span>)}
+            </li>
+          ))}
         </ul>
       ) : <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{items ? completedEmpty : empty}</p>}
     </section>
