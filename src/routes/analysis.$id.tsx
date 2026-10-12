@@ -43,7 +43,7 @@ function Analysis() {
   const o = Route.useLoaderData();
   const { profile, isSample } = useProfile();
   const [showDemo, setShowDemo] = useState(false);
-  const status: Status = hasEnoughData(profile) ? "unavailable" : "insufficient";
+  const status = (hasEnoughData(profile) ? "unavailable" : "insufficient") as Status;
   const demo = demoMatch(profile, o);
 
   return (
